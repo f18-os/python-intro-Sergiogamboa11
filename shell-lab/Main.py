@@ -17,7 +17,8 @@ class MyPrompt(Cmd):
     def do_echo(self, line):
         '''Echo!'''
         for i in range(len(self.temp)):
-            print(self.temp[i])
+            sys.stdout.write(self.temp[i] + " ")
+        print()
 
     def precmd(self, line):
         self.temp = line.split(" ")
