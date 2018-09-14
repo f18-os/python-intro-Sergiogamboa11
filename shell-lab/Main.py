@@ -1,11 +1,11 @@
 from cmd import Cmd
-import tokenize
+import sys
 
 
 class MyPrompt(Cmd):
     prompt = "$ "
     intro = "Welcome to Sergio's shell!\nType help for list of commands."
-
+    temp = ""
     def do_exit(self, inp):
         '''Exit the app'''
         return True
@@ -13,6 +13,15 @@ class MyPrompt(Cmd):
     def do_EOF(self, line):
         '''Exit the app when EOF is reached'''
         return True
+
+    def do_echo(self, line):
+        '''Echo!'''
+        for i in range(len(self.temp)):
+            print(self.temp[i])
+
+    def precmd(self, line):
+        self.temp = line.split(" ")
+        return line
 
 MyPrompt().cmdloop()
 
