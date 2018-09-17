@@ -34,6 +34,18 @@ class MyPrompt(Cmd):
         #wait()
         return line
 
+    def do_ls(self, line):
+        files = os.listdir()
+        for i in range(len(files)):
+            print(files[i])
+
+    def do_cd(self, line):
+        os.chdir(line)
+        print(os.getcwd())
+
+    def do_pwd(self, line):
+        print(os.getcwd())
+
 
 def fork():
     pid = os.getpid()
@@ -83,10 +95,9 @@ def tokenize(line):
     elif rc == 0:  # child
         os.write(1, ("I am child.  My pid==%d.  Parent's pid=%d\n" % (os.getpid(), pid)).encode())
         print(sys.argv[0])
-        #currentFile = os.path.abspath(__file__)
         myPath = os.path.abspath("wordCount.py")
         cmd = ["input.txt", "output.txt"]
-        os.execv(sys.executable, [sys.executable] + [myPath] + cmd)
+        os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
     else:  # parent (forked ok)
         wc = os.wait()  #or just wait?
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())

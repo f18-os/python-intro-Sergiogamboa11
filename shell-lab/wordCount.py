@@ -25,3 +25,4 @@ output = open(userOutput, "w")
 for key, value in sorted(wordCount.items()):
     output.write(str(key) + " " + str(value) + " \n")
 output.close()
+print("wc end")
