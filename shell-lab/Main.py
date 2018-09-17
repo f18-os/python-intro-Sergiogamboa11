@@ -1,10 +1,12 @@
 from cmd import Cmd
-import sys, os, time, re
+import sys, os, time, re, glob, time, stat
 
 class MyPrompt(Cmd):
     prompt = "$ "
     intro = "Welcome to Sergio's shell!\nType help for list of commands."
     temp = ""
+    file = False
+    out = 1
 
     def precmd(self, line):
         #self.temp = line.split(" ")
@@ -12,7 +14,17 @@ class MyPrompt(Cmd):
         return line
 
     def default(self, line):
-        print("Command not found")
+        if (self.file == True):
+            if (line != "EOF"):
+                self.temp = line.split(" ")
+                print(line + "")
+            else:
+                prompt = "$ "
+                file = False
+        if ">" in line:
+            redir()
+        else:
+            print("Command not found")
 
     def emptyline(self):
         pass
@@ -23,16 +35,25 @@ class MyPrompt(Cmd):
 
     def do_EOF(self, line):
         '''Exit the app when EOF is reached'''
-        return True
+        if (self.file == True):
+            self.prompt = "$ "
+            self.file = False
+            #os.close(sys.stdout.fileno())
+            print()
+            sys.stdout = sys.__stdout__
+            #print(sys.stdout.fileno())
+            #sys.stdout = os.fdopen(1, 'w', 0)
+        else:
+            return True
 
     def do_echo(self, line):
         '''Echo!'''
-        for i in range(len(self.temp)):
+        for i in range(1, len(self.temp)):
             sys.stdout.write(self.temp[i] + " ")
         print()
 
-    def do_tokenize(self, line):
-        tokenize(line)
+    def do_wc(self, line):
+        wc(line)
 
     def do_ls(self, line):
         files = os.listdir()
@@ -48,6 +69,38 @@ class MyPrompt(Cmd):
 
     def do_pwd(self, line):
         print(os.getcwd())
+
+    def do_find(self, line): #not working
+        os.chdir(os.path.abspath(os.sep))
+        for file in glob.glob(line):
+            print(file)
+
+    def do_redir(self, line):
+        """self.prompt = ""
+        #print(sys.stdout.fileno())
+        #fork()
+        os.close(1)
+        sys.stdout = open('somefile.txt', 'w')
+        '''print(sys.stdout.fileno())
+
+        sys.stdout.write(line)'''
+        self.file = True"""
+        redir()
+
+    def do_redir2(self, line):
+        redir2()
+
+
+    def do_fork(self, line):
+        saferfork()
+
+    def do_wait(self, line):
+        wait()
+
+
+def saferfork():
+    time.sleep(1)
+    fork()
 
 
 def fork():
@@ -87,7 +140,7 @@ def wait():
                      childPidCode).encode())
 
 
-def tokenize(line):
+def wc(line):
 
     line = line.split(" ")
     pid = os.getpid()
@@ -106,6 +159,36 @@ def tokenize(line):
         wc = os.wait()  #or just wait?
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
 
-MyPrompt().cmdloop()
+def redir():
+    rc = os.fork()  # or fork()
 
-print("Closing")
+    if rc < 0:
+        os.write(2, ("fork failed, returning %d\n" % rc).encode())
+        sys.exit(1)
+    elif rc == 0:  # child
+        os.close(sys.stdout.fileno())
+        open("output5.txt", "w+")
+        myPath = os.path.abspath("wordCount.py")
+        cmd = ["long file.txt", "output5.txt"]
+        os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
+    else:  # parent (forked ok)
+        wc = os.wait()  # or just wait?
+
+def redir2():
+    rc = os.fork()  # or fork()
+
+    if rc < 0:
+        os.write(2, ("fork failed, returning %d\n" % rc).encode())
+        sys.exit(1)
+    elif rc == 0:  # child
+        os.close(sys.stdout.fileno())
+        f=open("input.txt")
+        f1=open("output5.txt", "w+")
+
+        myPath = os.path.abspath("copy.py")
+        cmd = ["long file.txt", "output5.txt"]
+        os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
+    else:  # parent (forked ok)
+        wc = os.wait()  # or just wait?
+
+MyPrompt().cmdloop()
