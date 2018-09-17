@@ -6,6 +6,11 @@ class MyPrompt(Cmd):
     intro = "Welcome to Sergio's shell!\nType help for list of commands."
     temp = ""
 
+    def precmd(self, line):
+        #self.temp = line.split(" ")
+        #wait()
+        return line
+
     def default(self, line):
         print("Command not found")
 
@@ -29,18 +34,16 @@ class MyPrompt(Cmd):
     def do_tokenize(self, line):
         tokenize(line)
 
-    def precmd(self, line):
-        self.temp = line.split(" ")
-        #wait()
-        return line
-
     def do_ls(self, line):
         files = os.listdir()
         for i in range(len(files)):
             print(files[i])
 
     def do_cd(self, line):
-        os.chdir(line)
+        if(os.path.exists(line)):
+            os.chdir(line)
+        else:
+            print("Directory not found")
         print(os.getcwd())
 
     def do_pwd(self, line):
@@ -85,7 +88,8 @@ def wait():
 
 
 def tokenize(line):
-    print(line)
+
+    line = line.split(" ")
     pid = os.getpid()
     rc = os.fork() #or fork()
 
@@ -97,7 +101,7 @@ def tokenize(line):
         print(sys.argv[0])
         myPath = os.path.abspath("wordCount.py")
         cmd = ["input.txt", "output.txt"]
-        os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
+        os.execve(sys.executable, [sys.executable] + [myPath] + line, os.environ)
     else:  # parent (forked ok)
         wc = os.wait()  #or just wait?
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
