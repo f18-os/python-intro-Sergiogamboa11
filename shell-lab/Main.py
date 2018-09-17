@@ -22,7 +22,12 @@ class MyPrompt(Cmd):
                 prompt = "$ "
                 file = False
         if ">" in line:
-            redir()
+            temp = line.split(" ")
+            filter = set([">"])
+            new = [x for x in temp if not any(word in x for word in filter)]
+            line = " ".join(str(x) for x in new)
+            copy(line)
+
         else:
             print("Command not found")
 
@@ -87,9 +92,8 @@ class MyPrompt(Cmd):
         self.file = True"""
         redir()
 
-    def do_redir2(self, line):
-        redir2()
-
+    def do_copy(self, line):
+        copy(line)
 
     def do_fork(self, line):
         saferfork()
@@ -144,7 +148,7 @@ def wc(line):
 
     line = line.split(" ")
     pid = os.getpid()
-    rc = os.fork() #or fork()
+    rc = os.fork()
 
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
@@ -159,8 +163,9 @@ def wc(line):
         wc = os.wait()  #or just wait?
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
 
+
 def redir():
-    rc = os.fork()  # or fork()
+    rc = os.fork()
 
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
@@ -172,23 +177,20 @@ def redir():
         cmd = ["long file.txt", "output5.txt"]
         os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
     else:  # parent (forked ok)
-        wc = os.wait()  # or just wait?
+        wc = os.wait()
 
-def redir2():
-    rc = os.fork()  # or fork()
 
+def copy(line):
+    rc = os.fork()
+    line = line.split(" ")
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
         sys.exit(1)
     elif rc == 0:  # child
         os.close(sys.stdout.fileno())
-        f=open("input.txt")
-        f1=open("output5.txt", "w+")
-
         myPath = os.path.abspath("copy.py")
-        cmd = ["long file.txt", "output5.txt"]
-        os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
+        os.execve(sys.executable, [sys.executable] + [myPath] + line, os.environ)
     else:  # parent (forked ok)
-        wc = os.wait()  # or just wait?
+        wc = os.wait()
 
 MyPrompt().cmdloop()
