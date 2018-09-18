@@ -1,5 +1,5 @@
 from cmd import Cmd
-import sys, os, time, re, glob, time, stat
+import sys, os, time, re, glob, time, stat, pty
 
 class MyPrompt(Cmd):
     prompt = "$ "
@@ -7,6 +7,7 @@ class MyPrompt(Cmd):
     temp = ""
     file = False
     out = 1
+    oldstdout = sys.stdout
 
     def precmd(self, line):
         #self.temp = line.split(" ")
@@ -22,12 +23,15 @@ class MyPrompt(Cmd):
                 prompt = "$ "
                 file = False
         if ">" in line:
-            temp = line.split(" ")
-            filter = set([">"])
-            new = [x for x in temp if not any(word in x for word in filter)]
-            line = " ".join(str(x) for x in new)
-            copy(line)
-
+            fdout = os.open("output5.txt", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
+            os.dup2(fdout, pty.STDOUT_FILENO)
+            os.close(fdout)
+            self.file = True
+        if "<" in line:
+            fdin = os.open("input.txt", os.O_RDONLY, stat.S_IRWXU)
+            os.dup2(fdin, pty.STDOUT_FILENO)
+            os.close(fdin)
+            self.file = True
         else:
             print("Command not found")
 
@@ -43,13 +47,9 @@ class MyPrompt(Cmd):
         if (self.file == True):
             self.prompt = "$ "
             self.file = False
-            #os.close(sys.stdout.fileno())
-            print()
-            sys.stdout = sys.__stdout__
-            #print(sys.stdout.fileno())
-            #sys.stdout = os.fdopen(1, 'w', 0)
+            sys.stdout = self.oldstdout
         else:
-            return True
+            pass
 
     def do_echo(self, line):
         '''Echo!'''
@@ -192,5 +192,15 @@ def copy(line):
         os.execve(sys.executable, [sys.executable] + [myPath] + line, os.environ)
     else:  # parent (forked ok)
         wc = os.wait()
+
+def newOut():
+    fdout = os.open("output5.txt", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
+    os.dup2(fdout, pty.STDOUT_FILENO)
+    os.close(fdout)
+
+def newIn():
+    fdin = os.open("input.txt", os.O_RDONLY, stat.S_IRWXU)
+    os.dup2(fdin, pty.STDOUT_FILENO)
+    os.close(fdin)
 
 MyPrompt().cmdloop()
