@@ -2,6 +2,7 @@ from cmd import Cmd
 import sys, os, time, re, glob, time, stat, pty, subprocess
 
 class MyPrompt(Cmd):
+
     prompt = "$ "
     intro = "Welcome to Sergio's shell!\nType help for list of commands."
     temp = ""
@@ -78,12 +79,13 @@ class MyPrompt(Cmd):
     def do_copy(self, line):
         copy(line)
 
-
+# This method calls fork() after a 5 second delay
 def saferfork():
     time.sleep(5)
     fork()
 
 
+# This method performs the basic fork command
 def fork():
     pid = os.getpid()
     os.write(1, ("About to fork (pid:%d)\n" % pid).encode())
@@ -97,13 +99,11 @@ def fork():
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
 
 
+# This method performs the wait command
 def wait():
     pid = os.getpid()
-
     os.write(1, ("About to fork (pid:%d)\n" % pid).encode())
-
     rc = os.fork()
-
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
         sys.exit(1)
@@ -120,6 +120,7 @@ def wait():
                      childPidCode).encode())
 
 
+# This method redirects the ls command in a separate process
 def ls(line):
     line = line.strip(" ")
     line = line.strip(">")
@@ -139,6 +140,8 @@ def ls(line):
     else:  # parent (forked ok)
         childPidCode = os.wait()
 
+
+# This method redirects the pwd command in a separate process
 def pwd(line):
     line = line.strip(" ")
     line = line.strip(">")
@@ -206,23 +209,26 @@ def copy(line):
         wc = os.wait()
 
 
+# An attempt to implement the pipe functionality to the shell (not working)
 def pipe():
-    #pid = os.getpid()
     read, write = os.pipe()
+    os.set_inheritable(read, True)
+    os.set_inheritable(write, True)
     rc = os.fork()
+
     if rc < 0:
         sys.exit(1)
     elif rc == 0:  # child
         os.close(write)
         os.dup2(read, 0)
-        #exec()
+        #execve()
         os.close(0)
         sys.exit(1)
     else:  # parent
         os.close(read)
         os.dup2(write, 1)
         os.close(write)
-        #exec()
+        #execve()
 
 
 MyPrompt().cmdloop()
