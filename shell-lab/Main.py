@@ -1,13 +1,11 @@
 from cmd import Cmd
-import sys, os, time, re, glob, time, stat, pty, subprocess
+import sys, os, time, re, glob, time, stat, pty
 
 class MyPrompt(Cmd):
 
     prompt = "$ "
     intro = "Welcome to Sergio's shell!\nType help for list of commands."
     temp = ""
-    file = False
-    out = 1
 
     # If a command is not found, "Command not found" is printed
     # If there is a pipe, we call the pipe method
@@ -39,9 +37,6 @@ class MyPrompt(Cmd):
             sys.stdout.write(self.temp[i] + " ")
         print()
 
-    def do_wc(self, line):
-        wc(line)
-
     # Prints out list of current files, can be redirected
     def do_ls(self, line):
         '''Lists all files in the directory'''
@@ -69,17 +64,15 @@ class MyPrompt(Cmd):
         else:
             print(os.getcwd())
 
+    # Runs the exec() function, which executes python scripts
     def do_exec(self, line):
-        exec()
-
-    def do_copy(self, line):
-        copy(line)
+        '''Executes python scripts. Example: exec [program.py] [extra inputs]'''
+        exec(line)
 
 # This method calls fork() after a 5 second delay
 def saferfork():
     time.sleep(5)
     fork()
-
 
 # This method performs the basic fork command
 def fork():
@@ -156,51 +149,21 @@ def pwd(line):
         childPidCode = os.wait()
 
 
-def wc(line):
-
+# Executes the input filename in a separate process
+def exec(line):
     line = line.split(" ")
-    pid = os.getpid()
-    rc = os.fork()
-
-    if rc < 0:
-        os.write(2, ("fork failed, returning %d\n" % rc).encode())
-        sys.exit(1)
-    elif rc == 0:  # child
-        os.write(1, ("I am child.  My pid==%d.  Parent's pid=%d\n" % (os.getpid(), pid)).encode())
-        print(sys.argv[0])
-        myPath = os.path.abspath("wordCount.py")
-        cmd = ["input.txt", "output.txt"]
-        os.execve(sys.executable, [sys.executable] + [myPath] + line, os.environ)
-    else:  # parent (forked ok)
-        wc = os.wait()  #or just wait?
-        os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
-
-
-def exec():
+    cmd = line[1:]
     rc = os.fork()
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
         sys.exit(1)
     elif rc == 0:  # child
         os.close(sys.stdout.fileno())
-        open("output5.txt", "w+")
-        myPath = os.path.abspath("wordCount.py")
-        cmd = ["long file.txt", "output5.txt"]
+        try:
+            myPath = os.path.abspath(line[0])
+        except:
+            print("File not found")
         os.execve(sys.executable, [sys.executable] + [myPath] + cmd, os.environ)
-    else:  # parent (forked ok)
-        wc = os.wait()
-
-
-def copy(line):
-    rc = os.fork()
-    line = line.split(" ")
-    if rc < 0:
-        os.write(2, ("fork failed, returning %d\n" % rc).encode())
-        sys.exit(1)
-    elif rc == 0:  # child
-        os.close(sys.stdout.fileno())
-        myPath = os.path.abspath("copy.py")
-        os.execve(sys.executable, [sys.executable] + [myPath] + line, os.environ)
     else:  # parent (forked ok)
         wc = os.wait()
 
