@@ -8,50 +8,43 @@ class MyPrompt(Cmd):
     temp = ""
     file = False
     out = 1
-    oldstdout = sys.stdout
 
-    def precmd(self, line):
-        return line
-
+    # If a command is not found, "Command not found" is printed
+    # If there is a pipe, we call the pipe method
     def default(self, line):
-        if (self.file == True):
-            if (line != "EOF"):
-                self.temp = line.split(" ")
-                print(line + "")
-            else:
-                prompt = "$ "
-                file = False
         if "|" in line:
             pipe()
         else:
             print("Command not found")
 
+    # If empty line is input, nothing happens
     def emptyline(self):
         pass
 
+    # Shell exits with exit command
     def do_exit(self, inp):
         '''Exit the app'''
         return True
 
+    # Shell exits when EOF is reached
     def do_EOF(self, line):
         '''Exit the app when EOF is reached'''
-        if (self.file == True):
-            self.prompt = "$ "
-            self.file = False
-            sys.stdout = self.oldstdout
-        else:
-            pass
+        return True
 
+    # Anything after 'echo' is printed back out
     def do_echo(self, line):
         '''Echo!'''
-        for i in range(1, len(self.temp)):
+        self.temp = line.split(" ")
+        for i in range(len(self.temp)):
             sys.stdout.write(self.temp[i] + " ")
         print()
 
     def do_wc(self, line):
         wc(line)
 
+    # Prints out list of current files, can be redirected
     def do_ls(self, line):
+        '''Lists all files in the directory'''
         if ">" in line:
             ls(line)
         else:
@@ -59,15 +52,18 @@ class MyPrompt(Cmd):
             for i in range(len(files)):
                 print(files[i])
 
-
+    # Changes current directory
     def do_cd(self, line):
+        '''Changes directory'''
         if(os.path.exists(line)):
             os.chdir(line)
         else:
             print("Directory not found")
         print(os.getcwd())
 
+    # Prints out current directory, can be redirected
     def do_pwd(self, line):
+        '''Prints out the current directory'''
         if ">" in line:
             pwd(line)
         else:
