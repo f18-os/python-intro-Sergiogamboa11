@@ -1,5 +1,5 @@
 from cmd import Cmd
-import sys, os, time, re, glob, time, stat, pty
+import sys, os, time, re, glob, time, stat, pty, subprocess
 
 class MyPrompt(Cmd):
     prompt = "$ "
@@ -10,8 +10,6 @@ class MyPrompt(Cmd):
     oldstdout = sys.stdout
 
     def precmd(self, line):
-        #self.temp = line.split(" ")
-        #wait()
         return line
 
     def default(self, line):
@@ -22,16 +20,8 @@ class MyPrompt(Cmd):
             else:
                 prompt = "$ "
                 file = False
-        if ">" in line:
-            fdout = os.open("output5.txt", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
-            os.dup2(fdout, pty.STDOUT_FILENO)
-            os.close(fdout)
-            self.file = True
-        if "<" in line:
-            fdin = os.open("input.txt", os.O_RDONLY, stat.S_IRWXU)
-            os.dup2(fdin, pty.STDOUT_FILENO)
-            os.close(fdin)
-            self.file = True
+        if "|" in line:
+            pipe()
         else:
             print("Command not found")
 
@@ -61,9 +51,13 @@ class MyPrompt(Cmd):
         wc(line)
 
     def do_ls(self, line):
-        files = os.listdir()
-        for i in range(len(files)):
-            print(files[i])
+        if ">" in line:
+            ls(line)
+        else:
+            files = os.listdir()
+            for i in range(len(files)):
+                print(files[i])
+
 
     def do_cd(self, line):
         if(os.path.exists(line)):
@@ -73,37 +67,20 @@ class MyPrompt(Cmd):
         print(os.getcwd())
 
     def do_pwd(self, line):
-        print(os.getcwd())
+        if ">" in line:
+            pwd(line)
+        else:
+            print(os.getcwd())
 
-    def do_find(self, line): #not working
-        os.chdir(os.path.abspath(os.sep))
-        for file in glob.glob(line):
-            print(file)
-
-    def do_redir(self, line):
-        """self.prompt = ""
-        #print(sys.stdout.fileno())
-        #fork()
-        os.close(1)
-        sys.stdout = open('somefile.txt', 'w')
-        '''print(sys.stdout.fileno())
-
-        sys.stdout.write(line)'''
-        self.file = True"""
-        redir()
+    def do_exec(self, line):
+        exec()
 
     def do_copy(self, line):
         copy(line)
 
-    def do_fork(self, line):
-        saferfork()
-
-    def do_wait(self, line):
-        wait()
-
 
 def saferfork():
-    time.sleep(1)
+    time.sleep(5)
     fork()
 
 
@@ -116,7 +93,7 @@ def fork():
         sys.exit(1)
     elif rc == 0:  # child
         os.write(1, ("I am child.  My pid==%d.  Parent's pid=%d\n" % (os.getpid(), pid)).encode())
-    else:  # parent (forked ok)
+    else:  # parent
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
 
 
@@ -134,7 +111,6 @@ def wait():
         os.write(1, ("Child: My pid==%d.  Parent's pid=%d\n" %
                      (os.getpid(), pid)).encode())
         time.sleep(1)  # block for 1 second
-        os.write(1, "Child   ....terminating now with exit code 0\n".encode())
         sys.exit(0)
     else:  # parent (forked ok)
         os.write(1, ("Parent: My pid=%d.  Child's pid=%d\n" %
@@ -142,6 +118,43 @@ def wait():
         childPidCode = os.wait()
         os.write(1, ("Parent: Child %d terminated with exit code %d\n" %
                      childPidCode).encode())
+
+
+def ls(line):
+    line = line.strip(" ")
+    line = line.strip(">")
+    pid = os.getpid()
+    rc = os.fork()
+    if rc < 0:
+        sys.exit(1)
+    elif rc == 0:  # child
+        time.sleep(1)  # block for 1 second
+        fdout = os.open(line, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
+        os.dup2(fdout, pty.STDOUT_FILENO)
+        files = os.listdir()
+        for i in range(len(files)):
+            print(files[i])
+        os.close(fdout)
+        sys.exit(0)
+    else:  # parent (forked ok)
+        childPidCode = os.wait()
+
+def pwd(line):
+    line = line.strip(" ")
+    line = line.strip(">")
+    pid = os.getpid()
+    rc = os.fork()
+    if rc < 0:
+        sys.exit(1)
+    elif rc == 0:  # child
+        time.sleep(1)  # block for 1 second
+        fdout = os.open(line, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
+        os.dup2(fdout, pty.STDOUT_FILENO)
+        print(os.getcwd())
+        os.close(fdout)
+        sys.exit(0)
+    else:  # parent (forked ok)
+        childPidCode = os.wait()
 
 
 def wc(line):
@@ -164,9 +177,8 @@ def wc(line):
         os.write(1, ("I am parent.  My pid=%d.  Child's pid=%d\n" % (pid, rc)).encode())
 
 
-def redir():
+def exec():
     rc = os.fork()
-
     if rc < 0:
         os.write(2, ("fork failed, returning %d\n" % rc).encode())
         sys.exit(1)
@@ -193,14 +205,24 @@ def copy(line):
     else:  # parent (forked ok)
         wc = os.wait()
 
-def newOut():
-    fdout = os.open("output5.txt", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, stat.S_IRWXU)
-    os.dup2(fdout, pty.STDOUT_FILENO)
-    os.close(fdout)
 
-def newIn():
-    fdin = os.open("input.txt", os.O_RDONLY, stat.S_IRWXU)
-    os.dup2(fdin, pty.STDOUT_FILENO)
-    os.close(fdin)
+def pipe():
+    #pid = os.getpid()
+    read, write = os.pipe()
+    rc = os.fork()
+    if rc < 0:
+        sys.exit(1)
+    elif rc == 0:  # child
+        os.close(write)
+        os.dup2(read, 0)
+        #exec()
+        os.close(0)
+        sys.exit(1)
+    else:  # parent
+        os.close(read)
+        os.dup2(write, 1)
+        os.close(write)
+        #exec()
+
 
 MyPrompt().cmdloop()
